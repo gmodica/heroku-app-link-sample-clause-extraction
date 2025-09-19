@@ -35,21 +35,27 @@ public class ExtractController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError, "application/json")]
     public async Task<IActionResult> Post([FromBody] ExtractRequest body)
     {
-        // Log incoming request headers to console/log
-        try
-        {
-            _logger.LogInformation("Incoming request headers:");
-            foreach (var header in Request.Headers)
-            {
-                _logger.LogInformation("{Header}: {Value}", header.Key, string.Join(", ", header.Value.ToArray()));
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to log request headers");
-        }
+		Org? org = null;
+		try
+		{
+			if (Request.Headers.TryGetValue("X-Request-Context", out var ctxHeader))
+			{
+				var xClientContextHeaderValue = ctxHeader.FirstOrDefault();
+				org = ApplinkAuth.ParseRequest(xClientContextHeaderValue);
+			}
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Could not parse X-Request-Context header: {Message}", ex.Message);
+			org = null;
+		}
 
-        var url = body?.Url;
+		if (org == null) return BadRequest(new ErrorResponse("Could find or parse X-Request-Context header from Salesforce call"));
+
+		_logger.LogInformation("Processing extract request. OrgId={OrgId}, UserId={UserId}, Username={Username}, OrgType={OrgType}, AccessToken={AccessToken}",
+			org.Id, org.User.Id, org.User.Username, org.OrgType, org.AccessToken);
+
+		var url = body?.Url;
         if (string.IsNullOrWhiteSpace(url))
             return BadRequest(new ErrorResponse("Missing 'url' parameter."));
 

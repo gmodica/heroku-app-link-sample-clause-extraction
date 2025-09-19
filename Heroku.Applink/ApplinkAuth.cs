@@ -1,5 +1,8 @@
 using System;
+using System.Collections;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,6 +20,55 @@ public static class ApplinkAuth
     {
         PropertyNameCaseInsensitive = true
     };
+
+    /// <summary>
+    /// Resolves an authorization using the X-Client-Context header value from an incoming Salesforce request.
+    /// </summary>
+    /// <param name="xClientContextHeaderValue">The X-Client-Context header value</param>
+    /// <returns>An <see cref="Org"/> with tokens, URLs, and API helpers.</returns>
+    public static Org? ParseRequest(string? xClientContextHeaderValue)
+    {
+        // If X-Request-Context is present, try to parse it
+        try
+        {
+            if (string.IsNullOrWhiteSpace(xClientContextHeaderValue)) throw new InvalidOperationException("Expecting client context from Salesforce call");
+
+            string s = xClientContextHeaderValue.Trim();
+            s = s.Replace('-', '+').Replace('_', '/');
+            switch (s.Length % 4)
+            {
+                case 2: s += "=="; break;
+                case 3: s += "="; break;
+                case 0: break;
+                default: break;
+            }
+
+            byte[] bytes = Convert.FromBase64String(s);
+            string json = Encoding.UTF8.GetString(bytes);
+
+            var opts = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+
+            var ctx = JsonSerializer.Deserialize<RequestContext>(json, opts)!;
+
+            return new Org(
+                ctx.AccessToken,
+                ctx.ApiVersion,
+                null, // namespace reserved for future use
+                ctx.OrgId,
+                ctx.OrgDomainUrl,
+                ctx.UserContext.UserId,
+                ctx.UserContext.Username,
+                ""
+            );
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Could not parse client context from Salesforce call", ex);
+        }
+    }
 
     /// <summary>
     /// Resolves an authorization using the default addon name from <c>HEROKU_APPLINK_ADDON_NAME</c>
@@ -98,6 +150,23 @@ public static class ApplinkAuth
         }
 
         throw new InvalidOperationException("Unable to get authorization");
+    }
+
+    private sealed class UserContext
+    {
+        public required string UserId { get; init; }
+        public required string Username { get; init; }
+    }
+
+    private sealed class RequestContext
+    {
+        public required string RequestId { get; init; }
+        public required string AccessToken { get; init; }
+        public required string ApiVersion { get; init; }
+        public required string OrgId { get; init; }
+        public required string OrgDomainUrl { get; init; }
+        public required UserContext UserContext { get; init; }
+        public required string Version { get; init; }
     }
 
     private sealed class AuthorizationResponse
