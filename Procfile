@@ -1,0 +1,1 @@
+web: cd api/bin/publish/; ./api --urls https://*:$PORT
