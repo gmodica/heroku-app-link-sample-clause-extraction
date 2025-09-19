@@ -24,14 +24,33 @@ public static class ApplinkAuth
     /// <summary>
     /// Resolves an authorization using the X-Client-Context header value from an incoming Salesforce request.
     /// </summary>
+    /// <param name="headers">The headers dictionary</param>
+    /// <returns>An <see cref="Org"/> with tokens, URLs, and API helpers.</returns>
+    public static Org? ParseRequest(IDictionary<string, string?> headers)
+    {
+        if (headers == null) throw new ArgumentNullException(nameof(headers));
+
+        if (headers.TryGetValue("X-Request-Context", out var ctxHeader))
+        {
+            var xClientContextHeaderValue = ctxHeader;
+            return ParseRequest(xClientContextHeaderValue);
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Resolves an authorization using the X-Client-Context header value from an incoming Salesforce request.
+    /// </summary>
     /// <param name="xClientContextHeaderValue">The X-Client-Context header value</param>
     /// <returns>An <see cref="Org"/> with tokens, URLs, and API helpers.</returns>
     public static Org? ParseRequest(string? xClientContextHeaderValue)
     {
-        // If X-Request-Context is present, try to parse it
+        // try to parse X-Request-Context
         try
         {
-            if (string.IsNullOrWhiteSpace(xClientContextHeaderValue)) throw new InvalidOperationException("Expecting client context from Salesforce call");
+            if (string.IsNullOrWhiteSpace(xClientContextHeaderValue))
+                throw new InvalidOperationException("Expecting client context from Salesforce call");
 
             string s = xClientContextHeaderValue.Trim();
             s = s.Replace('-', '+').Replace('_', '/');
@@ -46,12 +65,7 @@ public static class ApplinkAuth
             byte[] bytes = Convert.FromBase64String(s);
             string json = Encoding.UTF8.GetString(bytes);
 
-            var opts = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            };
-
-            var ctx = JsonSerializer.Deserialize<RequestContext>(json, opts)!;
+            var ctx = JsonSerializer.Deserialize<RequestContext>(json, JsonOptions)!;
 
             return new Org(
                 ctx.AccessToken,

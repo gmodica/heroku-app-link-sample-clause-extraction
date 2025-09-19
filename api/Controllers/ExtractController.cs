@@ -36,21 +36,14 @@ public class ExtractController : ControllerBase
     public async Task<IActionResult> Post([FromBody] ExtractRequest body)
     {
 		Org? org = null;
-		try
-		{
-			if (Request.Headers.TryGetValue("X-Request-Context", out var ctxHeader))
-			{
-				var xClientContextHeaderValue = ctxHeader.FirstOrDefault();
-				org = ApplinkAuth.ParseRequest(xClientContextHeaderValue);
-			}
+		try {
+			org = ApplinkAuth.ParseRequest(Request.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault()));
 		}
 		catch (Exception ex)
 		{
-			_logger.LogError(ex, "Could not parse X-Request-Context header: {Message}", ex.Message);
-			org = null;
+			return BadRequest(new ErrorResponse("Could not parse request context from Salesforce call", ex.Message));
 		}
-
-		if (org == null) return BadRequest(new ErrorResponse("Could find or parse X-Request-Context header from Salesforce call"));
+		if (org == null) return BadRequest(new ErrorResponse("Could not get request context from Salesforce call"));
 
 		_logger.LogInformation("Processing extract request. OrgId={OrgId}, UserId={UserId}, Username={Username}, OrgType={OrgType}, AccessToken={AccessToken}",
 			org.Id, org.User.Id, org.User.Username, org.OrgType, org.AccessToken);
