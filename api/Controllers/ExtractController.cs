@@ -35,19 +35,19 @@ public class ExtractController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError, "application/json")]
     public async Task<IActionResult> Post([FromBody] ExtractRequest body)
     {
-		// Org? org = null;
-		// try {
-		// 	_logger.LogDebug("Request Headers: {Headers}", string.Join(", ", Request.Headers.Select(h => $"{h.Key}={h.Value}")));
-		// 	org = ApplinkAuth.ParseRequest(Request.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault()));
-		// }
-		// catch (Exception ex)
-		// {
-		// 	return BadRequest(new ErrorResponse("Could not parse request context from Salesforce call", ex.Message));
-		// }
-		// if (org == null) return BadRequest(new ErrorResponse("Could not get request context from Salesforce call"));
+		Org? org = null;
+		try {
+			_logger.LogDebug("Request Headers: {Headers}", string.Join(", ", Request.Headers.Select(h => $"{h.Key}={h.Value}")));
+			org = ApplinkAuth.ParseRequest(Request.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault()));
+		}
+		catch (Exception ex)
+		{
+			return BadRequest(new ErrorResponse("Could not parse request context from Salesforce call", ex.Message));
+		}
+		if (org == null) return BadRequest(new ErrorResponse("Could not get request context from Salesforce call"));
 
-		// _logger.LogInformation("Processing extract request. OrgId={OrgId}, UserId={UserId}, Username={Username}, OrgType={OrgType}, AccessToken={AccessToken}",
-		// 	org.Id, org.User.Id, org.User.Username, org.OrgType, org.AccessToken);
+		_logger.LogInformation("Processing extract request. OrgId={OrgId}, UserId={UserId}, Username={Username}, OrgType={OrgType}, AccessToken={AccessToken}",
+			org.Id, org.User.Id, org.User.Username, org.OrgType, org.AccessToken);
 
 		var url = body?.Url;
         if (string.IsNullOrWhiteSpace(url))
