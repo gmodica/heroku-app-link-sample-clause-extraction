@@ -37,6 +37,7 @@ public class ExtractController : ControllerBase
     {
 		Org? org = null;
 		try {
+			_logger.LogDebug("Request Headers: {Headers}", string.Join(", ", Request.Headers.Select(h => $"{h.Key}={h.Value}")));
 			org = ApplinkAuth.ParseRequest(Request.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault()));
 		}
 		catch (Exception ex)
