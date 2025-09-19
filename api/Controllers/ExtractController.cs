@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using ClausesExtractor.Api.Models;
+using Heroku.Applink;
+using Heroku.Applink.Models;
 
 namespace ClausesExtractor.Api.Controllers;
 
@@ -9,10 +11,12 @@ namespace ClausesExtractor.Api.Controllers;
 public class ExtractController : ControllerBase
 {
     private readonly IHttpClientFactory _httpFactory;
+    private readonly ILogger<ExtractController> _logger;
 
-    public ExtractController(IHttpClientFactory httpFactory)
+    public ExtractController(IHttpClientFactory httpFactory, ILogger<ExtractController> logger)
     {
         _httpFactory = httpFactory;
+        _logger = logger;
     }
 
     /// <summary>
@@ -31,6 +35,20 @@ public class ExtractController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status500InternalServerError, "application/json")]
     public async Task<IActionResult> Post([FromBody] ExtractRequest body)
     {
+        // Log incoming request headers to console/log
+        try
+        {
+            _logger.LogInformation("Incoming request headers:");
+            foreach (var header in Request.Headers)
+            {
+                _logger.LogInformation("{Header}: {Value}", header.Key, string.Join(", ", header.Value.ToArray()));
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to log request headers");
+        }
+
         var url = body?.Url;
         if (string.IsNullOrWhiteSpace(url))
             return BadRequest(new ErrorResponse("Missing 'url' parameter."));
