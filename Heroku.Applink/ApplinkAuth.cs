@@ -30,7 +30,7 @@ public static class ApplinkAuth
     {
         if (headers == null) throw new ArgumentNullException(nameof(headers));
 
-        if (headers.TryGetValue("X-Request-Context", out var ctxHeader))
+        if (headers.TryGetValue("X-Client-Context", out var ctxHeader))
         {
             var xClientContextHeaderValue = ctxHeader;
             return ParseRequest(xClientContextHeaderValue);
