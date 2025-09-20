@@ -132,7 +132,7 @@ public class Worker : BackgroundService
 
                 RecordForCreate eventRecord = new RecordForCreate()
                 {
-                    Type ="Extract_Event__c",
+                    Type ="Clauses_Extraction_Event__e",
                     Fields = new Dictionary<string, object?>
                     {
                         { "User_Id__c", job.SalesforceContext.User.Id },
