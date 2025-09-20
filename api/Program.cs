@@ -35,4 +35,5 @@ app.UseHttpsRedirection();
 
 app.MapControllers();
 
-app.Run();
+var port = Environment.GetEnvironmentVariable("APP_PORT") ?? "3000";
+app.Run($"http://*:{port}");
