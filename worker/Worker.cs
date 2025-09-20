@@ -110,7 +110,7 @@ public class Worker : BackgroundService
                 var dataTableBuilder = org.BulkApi.CreateDataTableBuilder("Name", "Id__c", "Number__c", "Body__c");
                 foreach (var file in results.Files)
                 {
-                    dataTableBuilder.AddRow(new[] { file.Name?.Substring(0, 80) ?? "", file.Id ?? "", file.Number ?? "", file.Body ?? "" });
+                    dataTableBuilder.AddRow(new[] { file.Name?.Substring(0, Math.Min(80, file.Name.Length)) ?? "", file.Id ?? "", file.Number ?? "", file.Body ?? "" });
                 }
                 var dataTable = dataTableBuilder.Build();
 
