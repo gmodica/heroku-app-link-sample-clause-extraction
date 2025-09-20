@@ -135,6 +135,7 @@ public class Worker : BackgroundService
                     Type ="Extract_Event__c",
                     Fields = new Dictionary<string, object?>
                     {
+                        { "User_Id__c", job.SalesforceContext.User.Id },
                         { "Job_Id__c", job.JobId },
                         { "Bulk_Job_Id__c", bulkJobId },
                         { "Total_Clauses_Error__c", results.Errors?.Count ?? 0 },
