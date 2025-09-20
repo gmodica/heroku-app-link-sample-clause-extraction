@@ -148,12 +148,12 @@ public sealed class BulkApi
     /// Creates ingest jobs as needed and uploads CSV parts for the given object.
     /// Returns job references or error descriptors per part.
     /// </summary>
-    public async Task<List<object>> IngestAsync(string objectApiName, DataTable dataTable, string operation = "insert", CancellationToken ct = default)
+    public async Task<List<object>> IngestAsync(string objectApiName, DataTable dataTable, string operation = "insert", string? externalIdFieldName = null, CancellationToken ct = default)
     {
         var results = new List<object>();
         foreach (var part in SplitDataTable(dataTable))
         {
-            var job = await CreateIngestJobAsync(objectApiName, operation, ct).ConfigureAwait(false);
+            var job = await CreateIngestJobAsync(objectApiName, operation, externalIdFieldName, ct).ConfigureAwait(false);
             try
             {
                 await UploadIngestDataAsync(job.Id, part, ct).ConfigureAwait(false);
@@ -278,12 +278,12 @@ public sealed class BulkApi
         => await GetIngestResultsAsync(jobRef, "unprocessedrecords", ct).ConfigureAwait(false);
 
     // Internals
-    private async Task<IngestJobReference> CreateIngestJobAsync(string objectApiName, string operation, CancellationToken ct)
+    private async Task<IngestJobReference> CreateIngestJobAsync(string objectApiName, string operation, string? externalIdFieldName, CancellationToken ct)
     {
         using var client = CreateClient();
         var url = $"/services/data/v{_apiVersion}/jobs/ingest";
-        var body = new { @object = objectApiName, operation, contentType = "CSV" };
-        using var resp = await client.PostAsync(url, JsonContent(body), ct).ConfigureAwait(false);
+        var body = JsonContent(operation == "upsert" ? new { @object = objectApiName, operation, externalIdFieldName, contentType = "CSV" } : new { @object = objectApiName, operation, contentType = "CSV" });
+        using var resp = await client.PostAsync(url, body, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
         var json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         using var doc = JsonDocument.Parse(json);

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Heroku.Applink.Models;
 
 namespace ClausesExtractor.Models;
 
@@ -28,3 +29,12 @@ public record ErrorFile(string FileName, string Error);
 /// <param name="Files">List of successfully parsed files.</param>
 /// <param name="Errors">Optional list of files that failed to parse.</param>
 public record ExtractResults(string Url, List<ParsedFile> Files, List<ErrorFile>? Errors = null);
+
+
+/// <summary>
+/// Response returned by the extract endpoint.
+/// </summary>
+/// <param name="Url">The URL originally requested.</param>
+/// <param name="Files">List of successfully parsed files.</param>
+/// <param name="Errors">Optional list of files that failed to parse.</param>
+public record ExtractJob(string JobId, string Url, Org SalesforceContext);

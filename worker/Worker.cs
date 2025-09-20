@@ -1,4 +1,10 @@
+using System.Text.Json;
+using ClausesExtractor;
+using ClausesExtractor.Models;
+using Heroku.Applink.Data;
+using Heroku.Applink.Models;
 using StackExchange.Redis;
+using static Heroku.Applink.Bulk.BulkApi;
 
 namespace worker;
 
@@ -78,9 +84,70 @@ public class Worker : BackgroundService
             var text = (string?)message;
             _logger.LogInformation("Processing job message: {Message}", text);
 
-            // TODO: Replace this with real job-processing logic.
-            // Example: parse JSON payload and call downstream services.
-            await Task.Delay(500, cancellationToken);
+            ExtractJob? job = System.Text.Json.JsonSerializer.Deserialize<ExtractJob>(text!);
+            if (job == null)
+            {
+                _logger.LogError("Failed to deserialize job message: {Message}", text);
+                return;
+            }
+
+            try
+            {
+                var extractor = new Extractor();
+                var results = await extractor.ExtractClauses(job.Url);
+
+                Org org = new Org(
+                    job.SalesforceContext.AccessToken,
+                    job.SalesforceContext.ApiVersion,
+                    job.SalesforceContext.Namespace,
+                    job.SalesforceContext.Id,
+                    job.SalesforceContext.DomainUrl,
+                    job.SalesforceContext.User.Id,
+                    job.SalesforceContext.User.Username,
+                    job.SalesforceContext.OrgType
+                );
+
+                var dataTableBuilder = org.BulkApi.CreateDataTableBuilder("Name", "Id__c", "Number__c", "Body__c");
+                foreach (var file in results.Files)
+                {
+                    dataTableBuilder.AddRow(new[] { file.Name ?? "", file.Id ?? "", file.Number ?? "", file.Body ?? "" });
+                }
+                var dataTable = dataTableBuilder.Build();
+
+                var ingestJobs = await org.BulkApi.IngestAsync("Clause__c", dataTable, "upsert", "Id__c", cancellationToken);
+                IngestJobReference bulkJobReference = (ingestJobs.FirstOrDefault() as IngestJobReference)!;
+
+                string bulkJobId = bulkJobReference.Id;
+                _logger.LogInformation("Ingested {FileCount} clauses for job {JobId}", results.Files.Count, bulkJobId);
+
+                // wait on completion status
+                while(true) {
+                    JsonDocument statusPayload = await org.BulkApi.GetInfoAsync(bulkJobReference, cancellationToken);
+                    string status = statusPayload.RootElement.GetProperty("state").GetString() ?? "Unknown";
+                    if (status == "JobComplete" || status == "Aborted" || status == "Failed")
+                        break;
+
+                    await Task.Delay(1000, cancellationToken);
+                }
+
+                RecordForCreate eventRecord = new RecordForCreate()
+                {
+                    Type ="Extract_Event__c",
+                    Fields = new Dictionary<string, object?>
+                    {
+                        { "Job_Id__c", job.JobId },
+                        { "Bulk_Job_Id__c", bulkJobId },
+                        { "Total_Clauses_Error__c", results.Errors?.Count ?? 0 },
+                        { "Total_Clauses_Submitted__c", results.Files.Count }
+                    }
+                };
+                await org.DataApi.CreateAsync(eventRecord, cancellationToken);
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogError(ex, "Error extracting clauses for job {JobId} from URL {Url}", job.JobId, job.Url);
+                return;
+            }
 
             _logger.LogInformation("Finished processing job message");
         }

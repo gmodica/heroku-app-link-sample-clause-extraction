@@ -4,6 +4,7 @@ using ClausesExtractor.Api.Models;
 using Heroku.Applink;
 using Heroku.Applink.Models;
 using StackExchange.Redis;
+using ClausesExtractor.Models;
 
 namespace api.Controllers
 {
@@ -68,11 +69,8 @@ namespace api.Controllers
 
             var jobId = Guid.NewGuid().ToString();
 
-            var payload = new {
-                JobId = jobId,
-                Url = url,
-                SalesforceContext = org
-            };
+            var payload = new ExtractJob(JobId: jobId, Url: url, SalesforceContext: org);
+
             var message = System.Text.Json.JsonSerializer.Serialize(payload);
 
             await subscriber.PublishAsync(RedisChannel.Literal("jobs"), message);
