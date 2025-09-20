@@ -13,55 +13,89 @@ public class ExampleResponseOperationFilter : IOperationFilter
 
 		// Match POST /extract (or controller named Extract)
 		var isPost = string.Equals(api.HttpMethod, "POST", StringComparison.OrdinalIgnoreCase);
+		var isGet = string.Equals(api.HttpMethod, "GET", StringComparison.OrdinalIgnoreCase);
 		var route = api.RelativePath ?? string.Empty;
 		var controllerName = api.ActionDescriptor?.RouteValues != null && api.ActionDescriptor.RouteValues.TryGetValue("controller", out var c) ? c : null;
 
-		var matchesExtractRoute = route.Trim('/').StartsWith("extract", StringComparison.OrdinalIgnoreCase) || string.Equals(controllerName, "Extract", StringComparison.OrdinalIgnoreCase);
-		if (!isPost || !matchesExtractRoute) return;
+		var matchesExtractRoute = string.Equals(route, "extract", StringComparison.OrdinalIgnoreCase);
+		var matchesExtractJobRoute = string.Equals(route, "extract-async", StringComparison.OrdinalIgnoreCase);
+		var matchesHealthcheckRoute = string.Equals(route, "healthcheck", StringComparison.OrdinalIgnoreCase);
 
-		var example = new OpenApiObject
+		if (isGet && matchesHealthcheckRoute)
 		{
-			["url"] = new OpenApiString("https://example.com/archive.zip") ,
-			["files"] = new OpenApiArray
+			var example = new OpenApiObject
 			{
-				new OpenApiObject
-				{
-					["fileName"] = new OpenApiString("part_52/52.100.dita"),
-					["id"] = new OpenApiString("clause_1"),
-					["name"] = new OpenApiString("Sample Clause"),
-					["number"] = new OpenApiString("52.100-1"),
-					["body"] = new OpenApiString("<p>This is the clause body</p>")
-				}
-			}
-		};
+				["status"] = new OpenApiString("ok")
+			};
 
-		operation.Responses ??= new OpenApiResponses();
-		if (operation.Responses.TryGetValue("200", out var resp))
-		{
-			resp.Content ??= new Dictionary<string, OpenApiMediaType>();
-			if (resp.Content.TryGetValue("application/json", out var existingMedia))
+			operation.Responses ??= new OpenApiResponses();
+			if (operation.Responses.TryGetValue("200", out var resp))
 			{
-				// preserve existing schema and set example
-				existingMedia.Example = example;
-
-				// ensure schema exists for ExtractResponse so it appears under components/schemas
+				// add media type with example and explicit schema
+				var media = new OpenApiMediaType { Example = example };
 				try
 				{
-					var modelType = typeof(ClausesExtractor.Api.Models.ExtractResponse);
-					if (existingMedia.Schema == null && context.SchemaGenerator != null)
+					var modelType = typeof(ClausesExtractor.Api.Models.HealthcheckResponse);
+					if (context.SchemaGenerator != null)
 					{
-						existingMedia.Schema = context.SchemaGenerator.GenerateSchema(modelType, context.SchemaRepository);
+						media.Schema = context.SchemaGenerator.GenerateSchema(modelType, context.SchemaRepository);
 					}
 				}
 				catch { }
+				resp.Content["application/json"] = media;
 			}
-			else
+		}
+		else if (isPost && matchesExtractRoute)
+		{
+			var example = new OpenApiObject
+			{
+				["url"] = new OpenApiString("https://example.com/archive.zip"),
+				["files"] = new OpenApiArray
+					{
+						new OpenApiObject
+						{
+							["fileName"] = new OpenApiString("part_52/52.100.dita"),
+							["id"] = new OpenApiString("clause_1"),
+							["name"] = new OpenApiString("Sample Clause"),
+							["number"] = new OpenApiString("52.100-1"),
+							["body"] = new OpenApiString("<p>This is the clause body</p>")
+						}
+					}
+			};
+
+			operation.Responses ??= new OpenApiResponses();
+			if (operation.Responses.TryGetValue("200", out var resp))
 			{
 				// add media type with example and explicit schema
 				var media = new OpenApiMediaType { Example = example };
 				try
 				{
 					var modelType = typeof(ClausesExtractor.Api.Models.ExtractResponse);
+					if (context.SchemaGenerator != null)
+					{
+						media.Schema = context.SchemaGenerator.GenerateSchema(modelType, context.SchemaRepository);
+					}
+				}
+				catch { }
+				resp.Content["application/json"] = media;
+			}
+		}
+		else if (isPost && matchesExtractJobRoute)
+		{
+			var example = new OpenApiObject
+			{
+				["url"] = new OpenApiString("https://example.com/archive.zip"),
+				["jobId"] = new OpenApiString("123e4567-e89b-12d3-a456-426614174000")
+			};
+
+			operation.Responses ??= new OpenApiResponses();
+			if (operation.Responses.TryGetValue("202", out var resp))
+			{
+				// add media type with example and explicit schema
+				var media = new OpenApiMediaType { Example = example };
+				try
+				{
+					var modelType = typeof(ClausesExtractor.Api.Models.ExtractJobResponse);
 					if (context.SchemaGenerator != null)
 					{
 						media.Schema = context.SchemaGenerator.GenerateSchema(modelType, context.SchemaRepository);

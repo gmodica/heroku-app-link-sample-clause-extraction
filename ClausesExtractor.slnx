@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="api/api.csproj" />
+  <Project Path="ClausesExtractor/ClausesExtractor.csproj" />
   <Project Path="Heroku.Applink/Heroku.Applink.csproj" />
   <Project Path="worker/worker.csproj" />
 </Solution>

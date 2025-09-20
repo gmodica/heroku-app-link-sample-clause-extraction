@@ -10,10 +10,90 @@
         }
     ],
     "paths": {
+        "/extract-async": {
+            "post": {
+                "summary": "Extracts clauses asynchronously from a given URL",
+				"description": "Submits a job to execute asynchronously. Downloads the ZIP at the provided URL, extracts files in-memory and parses each as XML. Then clauses are create in Salesforce via Bulk API",
+				"operationId": "ExtractFilesAsync",
+				"x-sfdc": {
+					"heroku": {
+						"authorization": {
+							"connectedApp": "ClausesExtractionAppLinkConnectedApp",
+							"permissionSet": "ClausesExtraction"
+						}
+					}
+                },
+                "tags": [
+                    "ExtractJob"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExtractRequest"
+                            }
+                        },
+                        "text/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExtractRequest"
+                            }
+                        },
+                        "application/*+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ExtractRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExtractJobResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/extract": {
             "post": {
-				"summary": "Extract files from a given URL",
-				"description": "This endpoint allows you to extract files from a ZIP archive located at a specified URL.",
+                "summary": "Extracts clauses from a given URL",
+				"description": "Downloads the ZIP at the provided URL, extracts files in-memory and parses each as XML to return parsed objects",
 				"operationId": "ExtractFiles",
 				"x-sfdc": {
 					"heroku": {
@@ -67,18 +147,8 @@
                             }
                         }
                     },
-                    "413": {
-                        "description": "Payload Too Large",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorResponse"
-                                }
-                            }
-                        }
-                    },
-                    "504": {
-                        "description": "Gateway Timeout",
+                    "401": {
+                        "description": "Unauthorized",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -89,6 +159,16 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "504": {
+                        "description": "Gateway Timeout",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -131,6 +211,21 @@
                         "type": "string",
                         "default": null,
                         "nullable": true
+                    }
+                }
+            },
+            "ExtractJobResponse": {
+                "required": [
+                    "url",
+                    "jobId"
+                ],
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string"
+                    },
+                    "jobId": {
+                        "type": "string"
                     }
                 }
             },

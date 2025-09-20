@@ -1,7 +1,28 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using ClausesExtractor.Api.Swagger;
 using ClausesExtractor.Api.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var isHeroku = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DYNO"));
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    if (isHeroku)
+    {
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    }
+});
+builder.Services.AddHttpsRedirection(options =>
+{
+    if (isHeroku)
+    {
+        options.RedirectStatusCode = StatusCodes.Status308PermanentRedirect;
+        options.HttpsPort = 443;
+    };
+});
 
 // Add services to the container.
 builder.Services.AddOpenApi();
@@ -35,8 +56,12 @@ app.UseHttpsRedirection();
 
 app.MapControllers();
 
-// Simple healthcheck endpoint
-app.MapGet("/healthcheck", () => Results.Ok(new { status = "ok" }));
-
-var port = Environment.GetEnvironmentVariable("APP_PORT") ?? "3000";
-app.Run($"http://*:{port}");
+if (isHeroku)
+{
+    var port = Environment.GetEnvironmentVariable("APP_PORT") ?? "3000";
+    app.Run($"http://*:{port}");
+}
+else
+{
+    app.Run();
+}

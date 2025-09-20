@@ -10,10 +10,12 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.9" />
+    <PackageReference Include="StackExchange.Redis" Version="2.9.17" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ClausesExtractor\ClausesExtractor.csproj" />
     <ProjectReference Include="..\Heroku.Applink\Heroku.Applink.csproj" />
   </ItemGroup>
 
