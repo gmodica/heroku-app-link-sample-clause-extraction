@@ -110,7 +110,7 @@ public class Worker : BackgroundService
                 var dataTableBuilder = org.BulkApi.CreateDataTableBuilder("Name", "Id__c", "Number__c", "Body__c");
                 foreach (var file in results.Files)
                 {
-                    dataTableBuilder.AddRow(new[] { file.Name ?? "", file.Id ?? "", file.Number ?? "", file.Body ?? "" });
+                    dataTableBuilder.AddRow(new[] { file.Name?.Substring(0, 80) ?? "", file.Id ?? "", file.Number ?? "", file.Body ?? "" });
                 }
                 var dataTable = dataTableBuilder.Build();
 
@@ -121,29 +121,36 @@ public class Worker : BackgroundService
                 _logger.LogInformation("Ingested {FileCount} clauses for job {JobId}", results.Files.Count, bulkJobId);
 
                 // wait on completion status
-                while(true) {
+                int totalProcessed = 0;
+                int totalFailed = 0;
+                while (true) {
                     JsonDocument statusPayload = await org.BulkApi.GetInfoAsync(bulkJobReference, cancellationToken);
                     string status = statusPayload.RootElement.GetProperty("state").GetString() ?? "Unknown";
                     if (status == "JobComplete" || status == "Aborted" || status == "Failed")
+                    {
+                        totalProcessed = statusPayload.RootElement.GetProperty("numberRecordsProcessed").GetInt32();
+                        totalFailed = statusPayload.RootElement.GetProperty("numberRecordsFailed").GetInt32();
                         break;
+                    }
 
                     await Task.Delay(1000, cancellationToken);
                 }
 
-                RecordForCreate eventRecord = new RecordForCreate()
-                {
-                    Type ="Clauses_Extraction_Event__e",
-                    Fields = new Dictionary<string, object?>
+
+                    RecordForCreate eventRecord = new RecordForCreate()
                     {
-                        { "User_Id__c", job.SalesforceContext.UserId },
-                        { "Job_Id__c", job.JobId },
-                        { "Bulk_Job_Id__c", bulkJobId },
-                        { "Total_Clauses_Error__c", results.Errors?.Count ?? 0 },
-                        { "Total_Clauses_Submitted__c", results.Files.Count }
-                    }
-                };
-                await org.DataApi.CreateAsync(eventRecord, cancellationToken);
-            }
+                        Type = "Clauses_Extraction_Event__e",
+                        Fields = new Dictionary<string, object?>
+                        {
+                            { "User_Id__c", job.SalesforceContext.UserId },
+                            { "Job_Id__c", job.JobId },
+                            { "Bulk_Job_Id__c", bulkJobId },
+                            { "Total_Clauses_Error__c", (results.Errors?.Count ?? 0) + totalFailed },
+                            { "Total_Clauses_Submitted__c", totalProcessed }
+                        }
+                    };
+                    await org.DataApi.CreateAsync(eventRecord, cancellationToken);
+                }
             catch (System.Exception ex)
             {
                 _logger.LogError(ex, "Error extracting clauses for job {JobId} from URL {Url}", job.JobId, job.Url);
