@@ -1,1 +1,1 @@
-web: cd api/bin/publish/; ./api --urls http://*:$PORT
+web: cd api/bin/publish/; APP_PORT=3000 heroku-applink-service-mesh-latest-amd64 ./api --urls http://*:$APP_PORT
