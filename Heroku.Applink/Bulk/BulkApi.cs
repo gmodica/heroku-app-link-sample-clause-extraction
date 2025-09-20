@@ -282,7 +282,7 @@ public sealed class BulkApi
     {
         using var client = CreateClient();
         var url = $"/services/data/v{_apiVersion}/jobs/ingest";
-        var body = JsonContent(operation == "upsert" ? new { @object = objectApiName, operation, externalIdFieldName, contentType = "CSV" } : new { @object = objectApiName, operation, contentType = "CSV" });
+        var body = JsonContent(operation == "upsert" ? new { @object = objectApiName, operation, externalIdFieldName, contentType = "CSV", lineEnding = "CRLF" } : new { @object = objectApiName, operation, contentType = "CSV", lineEnding = "CRLF" });
         using var resp = await client.PostAsync(url, body, ct).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
         var json = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
@@ -371,7 +371,7 @@ public sealed class BulkApi
         using var writer = new StringWriter(sb, CultureInfo.InvariantCulture);
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            HasHeaderRecord = false
+            HasHeaderRecord = false,
         };
         using var csv = new CsvWriter(writer, config);
         foreach (var row in rows)
