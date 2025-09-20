@@ -69,7 +69,16 @@ namespace api.Controllers
 
             var jobId = Guid.NewGuid().ToString();
 
-            var payload = new ExtractJob(JobId: jobId, Url: url, SalesforceContext: org);
+            var payload = new ExtractJob(JobId: jobId, Url: url, SalesforceContext: new Context(
+                AccessToken: org.AccessToken,
+                ApiVersion: org.ApiVersion,
+                Namespace: org.Namespace,
+                OrgId: org.Id,
+                DomainUrl: org.DomainUrl,
+                UserId: org.User.Id,
+                Username: org.User.Username,
+                OrgType: org.OrgType
+            ));
 
             var message = System.Text.Json.JsonSerializer.Serialize(payload);
 

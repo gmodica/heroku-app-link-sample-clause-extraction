@@ -100,10 +100,10 @@ public class Worker : BackgroundService
                     job.SalesforceContext.AccessToken,
                     job.SalesforceContext.ApiVersion,
                     job.SalesforceContext.Namespace,
-                    job.SalesforceContext.Id,
+                    job.SalesforceContext.OrgId,
                     job.SalesforceContext.DomainUrl,
-                    job.SalesforceContext.User.Id,
-                    job.SalesforceContext.User.Username,
+                    job.SalesforceContext.UserId,
+                    job.SalesforceContext.Username,
                     job.SalesforceContext.OrgType
                 );
 
@@ -135,7 +135,7 @@ public class Worker : BackgroundService
                     Type ="Clauses_Extraction_Event__e",
                     Fields = new Dictionary<string, object?>
                     {
-                        { "User_Id__c", job.SalesforceContext.User.Id },
+                        { "User_Id__c", job.SalesforceContext.UserId },
                         { "Job_Id__c", job.JobId },
                         { "Bulk_Job_Id__c", bulkJobId },
                         { "Total_Clauses_Error__c", results.Errors?.Count ?? 0 },
