@@ -35,5 +35,8 @@ app.UseHttpsRedirection();
 
 app.MapControllers();
 
+// Simple healthcheck endpoint
+app.MapGet("/healthcheck", () => Results.Ok(new { status = "ok" }));
+
 var port = Environment.GetEnvironmentVariable("APP_PORT") ?? "3000";
 app.Run($"http://*:{port}");
