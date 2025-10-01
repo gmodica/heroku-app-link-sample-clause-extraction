@@ -1,0 +1,175 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "Agentforce",
+        "description": "Agent actions for Clause extraction and summarization",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://localhost:7177/"
+        }
+    ],
+    "x-sfdc": {
+        "agent": {
+            "topic": {
+                "classificationDescription": "This API allows to extract information from clauses",
+                "scope": "Your job is to assist users in summarizing government clauses",
+                "instructions": [
+                    "If the customer asks to summarize the content of a clause, ensure you collect the clause name and the URL where the get the clause from.",
+                    "If no URL is provided, assume this url: https://www.acquisition.gov/sites/default/files/current/far/compiled_dita/part_52.zip"
+                ],
+                "name": "Clause Summarization"
+            }
+        }
+    },
+    "paths": {
+        "/extract-clause": {
+            "get": {
+                "summary": "Summarizes a clause",
+				"description": "Downloads the ZIP at the provided URL, extracts files in-memory and parses each as XML. Then returns the subject and content of a specific clause identified by its id",
+				"operationId": "SummarizeClause",
+				"x-sfdc": {
+					"heroku": {
+						"authorization": {
+							"connectedApp": "ClausesSummarizationAppLinkConnectedApp",
+							"permissionSet": "ClausesSummarization"
+						}
+					},
+                    "agent": {
+                        "action": {
+                            "publishAsAgentAction": true,
+                            "isUserInput": true,
+                            "isDisplayable": true,
+                            "isPii": false
+                        }
+                    }
+                },
+                "tags": [
+                    "Summarize Clause"
+                ],
+                "parameters": [
+                    {
+                        "name": "Url",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Clause",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExtractClauseResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "504": {
+                        "description": "Gateway Timeout",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ErrorResponse": {
+                "required": [
+                    "error"
+                ],
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "string"
+                    },
+                    "details": {
+                        "type": "string",
+                        "default": null,
+                        "nullable": true
+                    }
+                }
+            },
+            "ExtractClauseResponse": {
+                "required": [
+                    "subject",
+                    "content"
+                ],
+                "type": "object",
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Summarize Clause",
+            "description": "Sumarizes the content of a given clause"
+        }
+    ]
+}
