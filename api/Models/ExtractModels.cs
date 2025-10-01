@@ -25,6 +25,20 @@ public record ExtractJobResponse(string Url, string JobId);
 public record ExtractRequest(string Url);
 
 /// <summary>
+/// Request body for the extract endpoint.
+/// </summary>
+/// <param name="Url">The URL pointing to the ZIP archive to download and parse.</param>
+/// <param name="Clause">The clause identifier used to get the clase and extract its contents</param>
+public record ExtractClauseRequest(string Url, string Clause);
+
+/// <summary>
+/// Response returned by the extract endpoint.
+/// </summary>
+/// <param name="Subject">The clause subject.</param>
+/// <param name="Content">The clause content.</param>
+public record ExtractClauseResponse(string? Subject, string? Content);
+
+/// <summary>
 /// Error body.
 /// </summary>
 /// <param name="Error">Error message</param>

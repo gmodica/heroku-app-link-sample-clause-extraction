@@ -19,6 +19,7 @@ public class ExampleResponseOperationFilter : IOperationFilter
 
 		var matchesExtractRoute = string.Equals(route, "extract", StringComparison.OrdinalIgnoreCase);
 		var matchesExtractJobRoute = string.Equals(route, "extract-async", StringComparison.OrdinalIgnoreCase);
+		var matchesExtractClauseRoute = string.Equals(route, "extract-clause", StringComparison.OrdinalIgnoreCase);
 		var matchesHealthcheckRoute = string.Equals(route, "healthcheck", StringComparison.OrdinalIgnoreCase);
 
 		if (isGet && matchesHealthcheckRoute)
@@ -36,6 +37,30 @@ public class ExampleResponseOperationFilter : IOperationFilter
 				try
 				{
 					var modelType = typeof(ClausesExtractor.Api.Models.HealthcheckResponse);
+					if (context.SchemaGenerator != null)
+					{
+						media.Schema = context.SchemaGenerator.GenerateSchema(modelType, context.SchemaRepository);
+					}
+				}
+				catch { }
+				resp.Content["application/json"] = media;
+			}
+		}
+		else if (isGet && matchesHealthcheckRoute)
+		{
+			var example = new OpenApiObject
+			{
+				["status"] = new OpenApiString("ok")
+			};
+
+			operation.Responses ??= new OpenApiResponses();
+			if (operation.Responses.TryGetValue("200", out var resp))
+			{
+				// add media type with example and explicit schema
+				var media = new OpenApiMediaType { Example = example };
+				try
+				{
+					var modelType = typeof(ClausesExtractor.Api.Models.ExtractClauseResponse);
 					if (context.SchemaGenerator != null)
 					{
 						media.Schema = context.SchemaGenerator.GenerateSchema(modelType, context.SchemaRepository);

@@ -90,6 +90,102 @@
                 }
             }
         },
+        "/extract-clause": {
+            "get": {
+                "summary": "Extracts a clause from a given URL",
+				"description": "Downloads the ZIP at the provided URL, extracts files in-memory and parses each as XML. Then returns the subject and content of a specific clause identified by its id",
+				"operationId": "ExtractClause",
+				"x-sfdc": {
+					"heroku": {
+						"authorization": {
+							"connectedApp": "ClausesExtractionAppLinkConnectedApp",
+							"permissionSet": "ClausesExtraction"
+						}
+					}
+                },
+                "tags": [
+                    "ExtractClause"
+                ],
+                "parameters": [
+                    {
+                        "name": "Url",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "Clause",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExtractClauseResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "504": {
+                        "description": "Gateway Timeout",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/extract": {
             "post": {
                 "summary": "Extracts clauses from a given URL",
@@ -214,6 +310,23 @@
                     }
                 }
             },
+            "ExtractClauseResponse": {
+                "required": [
+                    "subject",
+                    "content"
+                ],
+                "type": "object",
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "content": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                }
+            },
             "ExtractJobResponse": {
                 "required": [
                     "url",
@@ -300,6 +413,15 @@
         }
     },
     "tags": [
+        {
+            "name": "ExtractJob"
+        },
+        {
+            "name": "Healthcheck"
+        },
+        {
+            "name": "ExtractClause"
+        },
         {
             "name": "Extract"
         }
